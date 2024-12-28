@@ -1,0 +1,187 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Assessment 1: Multi-Instance EC2 Deployment with LAMP Stack",
+    "Parameters": {
+        "MyKey": {
+            "Description": "My keypair for SSH",
+            "Type": "String",
+            "AllowedValues": [
+                "baldaud",
+                "Key2",
+                "Key3"
+            ],
+            "Default": "baldaud"
+        },
+        "MyInstance": {
+            "Description": "Instance type for the EC2",
+            "Type": "String",
+            "AllowedValues": [
+                "t2.nano",
+                "t2.micro",
+                "t2.medium"               
+            ],
+            "Default": "t2.micro"
+        },
+        "NumberOfInstances": {
+            "Description": "Number of EC2 instances to create",
+            "Type": "Number",
+            "MinValue": 2,
+            "MaxValue": 3,
+            "Default": 2
+        }
+    },
+    "Resources": {
+        "MYEC2SG": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Allow SSH and HTTP traffic",
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 22,
+                        "ToPort": 22,
+                        "CidrIp": "0.0.0.0/0"
+                    },
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": 80,
+                        "ToPort": 80,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ]
+            }
+        },
+        "MyEC2Instance1": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": "ami-06650ca7ed78ff6fa",
+                "InstanceType": {
+                    "Ref": "MyInstance"
+                },
+                "KeyName": {
+                    "Ref": "MyKey"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "MYEC2SG"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Sub": "#!/bin/bash\nsudo apt update -y\nsudo apt upgrade -y\nsudo apt install -y lamp-server^\n"
+                    }
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "EC2Instance1-LAMP"
+                    }
+                ]
+            }
+        },
+        "MyEC2Instance2": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": "ami-06650ca7ed78ff6fa",
+                "InstanceType": {
+                    "Ref": "MyInstance"
+                },
+                "KeyName": {
+                    "Ref": "MyKey"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "MYEC2SG"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "EC2Instance2"
+                    }
+                ]
+            }
+        },
+        "MyEC2Instance3": {
+            "Condition": "CreateThirdInstance",
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "ImageId": "ami-06650ca7ed78ff6fa",
+                "InstanceType": {
+                    "Ref": "MyInstance"
+                },
+                "KeyName": {
+                    "Ref": "MyKey"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "MYEC2SG"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "EC2Instance3"
+                    }
+                ]
+            }
+        }
+    },
+    "Conditions": {
+        "CreateThirdInstance": {
+            "Fn::Equals": [
+                {"Ref": "NumberOfInstances"},
+                3
+            ]
+        }
+    },
+    "Outputs": {
+        "Instance1ID": {
+            "Description": "ID of the first EC2 instance",
+            "Value": {
+                "Ref": "MyEC2Instance1"
+            }
+        },
+        "Instance1PublicIP": {
+            "Description": "Public IP of the first EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyEC2Instance1",
+                    "PublicIp"
+                ]
+            }
+        },
+        "Instance2ID": {
+            "Description": "ID of the second EC2 instance",
+            "Value": {
+                "Ref": "MyEC2Instance2"
+            }
+        },
+        "Instance2PublicIP": {
+            "Description": "Public IP of the second EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyEC2Instance2",
+                    "PublicIp"
+                ]
+            }
+        },
+        "Instance3ID": {
+            "Condition": "CreateThirdInstance",
+            "Description": "ID of the third EC2 instance",
+            "Value": {
+                "Ref": "MyEC2Instance3"
+            }
+        },
+        "Instance3PublicIP": {
+            "Condition": "CreateThirdInstance",
+            "Description": "Public IP of the third EC2 instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyEC2Instance3",
+                    "PublicIp"
+                ]
+            }
+        }
+    }
+}
